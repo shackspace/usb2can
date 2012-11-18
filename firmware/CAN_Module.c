@@ -49,12 +49,47 @@ int CAN_Init()
 	return 0;
 }
 
-void can2ascii(ascii_can_message_string* _string, can_t _can)
+
+inline char nibble_to_ascii(uint8_t nibble)
 {
-	
+	nibble = nibble & 0x0F;
+	if(nibble < 0x0A)
+		return nibble + '0';
+	else
+		return nibble + 'A' - 0x0A;
 }
 
-void ascii2can(ascii_can_message_string* _string, can_t _can)
+void can2ascii(ascii_can_message_string _string, can_t _can)
+{
+	int i = 0;
+	_string[0] = 'I'; //Start CAN Message with ID
+	#if SUPPORT_EXTENDED_CANID
+	_string[1] = nibble_to_ascii(_can.id >> 28);
+	_string[2] = nibble_to_ascii(_can.id >> 24);
+	_string[3] = nibble_to_ascii(_can.id >> 20);
+	_string[4] = nibble_to_ascii(_can.id >> 16);
+	#else
+	_string[1] = 0;
+	_string[2] = 0;
+	_string[3] = 0;
+	_string[4] = 0;
+	#endif
+	_string[5] = nibble_to_ascii(_can.id >> 12);
+	_string[6] = nibble_to_ascii(_can.id >> 8);
+	_string[7] = nibble_to_ascii(_can.id >> 4);
+	_string[8] = nibble_to_ascii(_can.id);
+	_string[9] = _can.flags.rtr + (_can.flags.extended << 1) + 'G';
+	_can.length = _can.length > 8 ? 8 : _can.length;
+	_string[10] = _can.length + '0';
+	for(i = 0; i < _can.length; i++)
+	{
+		_string[11 + 2*i] = nibble_to_ascii(_can.data[i] >> 4);
+		_string[12 + 2*i] = nibble_to_ascii(_can.data[i]);
+	}
+	_string[11 + 2*i] = 0;
+}
+
+void ascii2can(ascii_can_message_string _string, can_t _can)
 {
 
 }

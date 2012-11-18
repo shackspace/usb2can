@@ -21,10 +21,10 @@
 
 int CAN_Init();
 
-typedef char[24] ascii_can_message_string;
+typedef char ascii_can_message_string[24];
 
-void can2ascii(ascii_can_message_string* _string, can_t _can);
+void can2ascii(ascii_can_message_string _string, can_t _can);
 
-void ascii2can(ascii_can_message_string* _string, can_t _can);
+void ascii2can(ascii_can_message_string _string, can_t _can);
 
 #endif
