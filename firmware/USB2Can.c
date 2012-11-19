@@ -110,11 +110,13 @@ void SetupHardware(void)
 	clock_prescale_set(clock_div_1);
 
 	/* Hardware Initialization */
-	Joystick_Init();
 	LEDs_Init();
 	USB_Init();
 
 	CAN_Init();
+
+	DDRE |= (1 << 6);
+	PORTE |= (1 << 6);
 }
 
 /** Checks for changes in the position of the board joystick, sending strings to the host upon each change
@@ -122,11 +124,10 @@ void SetupHardware(void)
  */
 void CheckJoystickMovement(void)
 {
-	uint8_t     JoyStatus_LCL = Joystick_GetStatus();
 	char*       ReportString  = NULL;
 	static bool ActionSent = false;
 
-	if (JoyStatus_LCL & JOY_UP)
+/*	if (JoyStatus_LCL & JOY_UP)
 	  ReportString = "Joystick Up\r\n";
 	else if (JoyStatus_LCL & JOY_DOWN)
 	  ReportString = "Joystick Down\r\n";
@@ -137,7 +138,7 @@ void CheckJoystickMovement(void)
 	else if (JoyStatus_LCL & JOY_PRESS)
 	  ReportString = "Joystick Pressed\r\n";
 	else
-	  ActionSent = false;
+	  ActionSent = false;*/
 
 	if ((ReportString != NULL) && (ActionSent == false))
 	{
@@ -175,5 +176,7 @@ void EVENT_USB_Device_ControlRequest(void)
 {
 	CDC_Device_ProcessControlRequest(&VirtualSerial1_CDC_Interface);
 	CDC_Device_ProcessControlRequest(&VirtualSerial2_CDC_Interface);
+
+	PORTE ^= PORTE & (1 << 6);
 }
 

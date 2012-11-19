@@ -46,12 +46,14 @@ int CAN_Init()
 	can_static_filter(can_filter);
 	can_module_initialized = true;
 
+	//can_set_mode(LISTEN_ONLY_MODE); //first set adapter passive
+
 	return 0;
 }
 
 
 inline char nibble_to_ascii(uint8_t nibble)
-{
+{		
 	nibble = nibble & 0x0F;
 	if(nibble < 0x0A)
 		return nibble + '0';
