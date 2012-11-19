@@ -63,22 +63,26 @@ void can2ascii(ascii_can_message_string _string, can_t _can)
 {
 	int i = 0;
 	_string[0] = 'I'; //Start CAN Message with ID
-	#if SUPPORT_EXTENDED_CANID
+#if SUPPORT_EXTENDED_CANID
 	_string[1] = nibble_to_ascii(_can.id >> 28);
 	_string[2] = nibble_to_ascii(_can.id >> 24);
 	_string[3] = nibble_to_ascii(_can.id >> 20);
 	_string[4] = nibble_to_ascii(_can.id >> 16);
-	#else
+#else
 	_string[1] = 0;
 	_string[2] = 0;
 	_string[3] = 0;
 	_string[4] = 0;
-	#endif
+#endif
 	_string[5] = nibble_to_ascii(_can.id >> 12);
 	_string[6] = nibble_to_ascii(_can.id >> 8);
 	_string[7] = nibble_to_ascii(_can.id >> 4);
 	_string[8] = nibble_to_ascii(_can.id);
-	_string[9] = _can.flags.rtr + (_can.flags.extended << 1) + 'G';
+#if SUPPORT_EXTENDED_CANID
+	_string[9] = _can.flags.rtr + (_can.flags.extended << 1) + 'R';
+#else
+	_string[9] = _can.flags.rtr + 'R';
+#endif
 	_can.length = _can.length > 8 ? 8 : _can.length;
 	_string[10] = _can.length + '0';
 	for(i = 0; i < _can.length; i++)
@@ -89,7 +93,54 @@ void can2ascii(ascii_can_message_string _string, can_t _can)
 	_string[11 + 2*i] = 0;
 }
 
-void ascii2can(ascii_can_message_string _string, can_t _can)
+bool ascii2can(ascii_can_message_string _string, can_t* _can)
 {
+	int i;
+	if(_string[0] == 'I') //identifier
+	{
+		for(i = 1; i < 8; i++)
+		{
+			
+			_can->id = _can->id << 4;
+			if(!isdigit(_string[i])) 
+				_can->id |= (_string[i] - '0');
+			else if (_string[i] >= 'A' && _string[i] <= 'F')
+				_can->id |= _string[i] - 'A' + 0x0A;
+			else return false;
+		}
+	}
+#if SUPPORT_EXTENDED_CANID
+	if(_string[9] >= 'R' && _string[9] <= 'U')
+	{
+		_can->flags.rtr = (_string[9] - 'R') & 0x01;
+		_can->flags.extended = ((_string[9] - 'R') >> 1) & 0x01;
+	}
+#else
+	if(_string[9] >= 'R' && _string[9] = 'U')
+	{
+		_can->flags.rtr = (_string[9] - 'R') & 0x01;
+	}
+#endif
+	else
+		return false;
+	if(_string[10] >= '0' && _string[10] <= '8')
+		_can->length = _string[10] - '0';
+	for(i = 0; i < _can->length; i++)
+	{
+		if(_string[11 + i * 2] == 0 || _string[12 + i * 2] == 0)
+			return false;		
+		if(!isdigit(_string[11 + i*2]))
+			_can->data[i] = (_string[11 + i*2] - '0') << 4;
+		else if(_string[11 + i*2] >= 'A' && _string[11 + i*2] <= 'F')
+			_can->data[i] = (_string[11 + i*2] - 'A' + 0x0A) << 4;
+		else return false;
 
+		if(!isdigit(_string[12 + i*2]))
+			_can->data[i] = _can->data[i] + (_string[12 + i*2] - '0');
+		else if(_string[12 + i*2] >= 'A' && _string[12 + i*2] <= 'F')
+			_can->data[i] = _can->data[i] + (_string[12 + i*2] - 'A' + 0x0A);
+		else return false;		
+	}
+		
+	return true;
 }
