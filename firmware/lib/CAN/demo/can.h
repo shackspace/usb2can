@@ -39,6 +39,8 @@
 	extern "C" {
 #endif
 
+typedef unsigned char prog_uint8_t;
+
 // ----------------------------------------------------------------------------
 /**
  * \ingroup		communication

@@ -61,7 +61,7 @@ inline char nibble_to_ascii(uint8_t nibble)
 		return nibble + 'A' - 0x0A;
 }
 
-void can2ascii(ascii_can_message_string _string, can_t _can)
+void can2ascii(char* _string, can_t _can)
 {
 	int i = 0;
 	_string[0] = 'I'; //Start CAN Message with ID
@@ -95,7 +95,7 @@ void can2ascii(ascii_can_message_string _string, can_t _can)
 	_string[11 + 2*i] = 0;
 }
 
-bool ascii2can(ascii_can_message_string _string, can_t* _can)
+bool ascii2can(char* _string, can_t* _can)
 {
 	int i;
 	if(_string[0] == 'I') //identifier

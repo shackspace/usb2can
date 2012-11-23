@@ -24,5 +24,9 @@
  */
 #define	SUPPORT_TIMESTAMPS		0
 
+#define	MCP2515_CS				B,0
+#define	MCP2515_INT				B,5
+
+#define	SUPPORT_MCP2515			1
 
 #endif	// CONFIG_H

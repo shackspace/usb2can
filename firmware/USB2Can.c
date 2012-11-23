@@ -1,4 +1,4 @@
-/** \file
+    /** \file
  *
  *  Main source file for the USB to Can converter. This file contains the main tasks of
  *  the demo and is responsible for the initial application hardware configuration.
@@ -6,6 +6,8 @@
 
 #include "USB2Can.h"
 #include "CAN_Module.h"
+
+#define MAX_BUFFER_LENGTH 128
 
 /** LUFA CDC Class driver interface configuration and state information. This structure is
  *  passed to all CDC Class driver functions, so that multiple instances of the same class
@@ -81,9 +83,36 @@ int main(void)
 	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 	sei();
 
+	//DDRB |= (1 << 3);
+	//PORTB |= (1 << 3);
+
+	can_t message;
+	message.id = 40;
+	message.flags.rtr = 0;
+	message.flags.extended = 1;
+    message.length = 2;
+    message.data[0] = 0x0F;
+    message.data[1] = 0xF0;
+
+    can_t retrieved_message;
+
+    can_set_mode(LOOPBACK_MODE);
+
 	for (;;)
 	{
-		CheckJoystickMovement();
+	    //CheckVirtualSerialCommands();
+		//CheckVirtualSerialCanMessages();
+
+        if( can_check_free_buffer())
+        {
+            can_send_message(&message);
+            //if(can_check_message())
+            {
+                //can_get_message(&retrieved_message);
+                //if(retrieved_message.id == 40)
+                    PORTE ^= (1 << 6);
+            }
+        }
 
 		/* Discard all received data on the first CDC interface */
 		CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface);
@@ -116,36 +145,49 @@ void SetupHardware(void)
 	CAN_Init();
 
 	DDRE |= (1 << 6);
-	PORTE |= (1 << 6);
+    PORTE &= ~(1 << 6);
 }
 
-/** Checks for changes in the position of the board joystick, sending strings to the host upon each change
- *  through the first of the CDC interfaces.
- */
-void CheckJoystickMovement(void)
+//using VirtualSerial1 for configuration purpose
+void CheckVirtualSerialCommands(void)
 {
-	char*       ReportString  = NULL;
-	static bool ActionSent = false;
 
-/*	if (JoyStatus_LCL & JOY_UP)
-	  ReportString = "Joystick Up\r\n";
-	else if (JoyStatus_LCL & JOY_DOWN)
-	  ReportString = "Joystick Down\r\n";
-	else if (JoyStatus_LCL & JOY_LEFT)
-	  ReportString = "Joystick Left\r\n";
-	else if (JoyStatus_LCL & JOY_RIGHT)
-	  ReportString = "Joystick Right\r\n";
-	else if (JoyStatus_LCL & JOY_PRESS)
-	  ReportString = "Joystick Pressed\r\n";
-	else
-	  ActionSent = false;*/
 
-	if ((ReportString != NULL) && (ActionSent == false))
-	{
-		ActionSent = true;
+}
 
-		CDC_Device_SendString(&VirtualSerial1_CDC_Interface, ReportString);
-	}
+//Can messages are transmitted via VirtualSerial2 to computer
+void CheckVirtualSerialCanMessages(void)
+{
+    static unsigned char buffer_pos = 0;
+    static unsigned char buffer[MAX_BUFFER_LENGTH] = "";
+    char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+    int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //return negative value while no new bytes are available
+    unsigned char i,j = 0;
+	while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
+    {
+        buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
+        buffer_pos++;                      //hopp to next buffer position
+    }
+    buffer[buffer_pos] = 0; //terminated by zero
+
+    while(i < MAX_BUFFER_LENGTH) //no ascii can messages found
+    {
+        for(i = 0; i < MAX_BUFFER_LENGTH && buffer[i] != '\n'; i++); //search for char '\n'
+
+        if(i <=  ASCII_CAN_MESSAGE_LENGTH)  //char '\n' found before end of buffer, i is position of '\n'
+        {                                  //message has a valid length --> should not be longer then ASCII_CAN_MESSAGE_LENGTH
+            for(j = 0; j < i; j++)       //copy all chars to message except '\n'
+            {
+                ascii_message[j] = buffer[j];  //copy
+            }
+        }
+        for(j = 0; j <= i && (i+j+2) < MAX_BUFFER_LENGTH; j++)    //cut all chars before and including ’\n’, move following chars to front
+        {
+            buffer[j] = buffer[i+j+1];                  //don't copy the char '\n' (+1)
+        }
+        buffer[i+j+1] = 0;
+    }
+
 }
 
 /** Event handler for the library USB Connection event. */
@@ -176,7 +218,5 @@ void EVENT_USB_Device_ControlRequest(void)
 {
 	CDC_Device_ProcessControlRequest(&VirtualSerial1_CDC_Interface);
 	CDC_Device_ProcessControlRequest(&VirtualSerial2_CDC_Interface);
-
-	PORTE ^= PORTE & (1 << 6);
 }
 

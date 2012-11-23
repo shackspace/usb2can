@@ -19,12 +19,12 @@
  *   - PB5 ... Connected to CANINT
  */
 
+#define ASCII_CAN_MESSAGE_LENGTH 24
+
 int CAN_Init();
 
-typedef char ascii_can_message_string[24];
+void can2ascii(char* _string, can_t _can);
 
-void can2ascii(ascii_can_message_string _string, can_t _can);
-
-bool ascii2can(ascii_can_message_string _string, can_t* _can);
+bool ascii2can(char* _string, can_t* _can);
 
 #endif
