@@ -23,7 +23,7 @@
 
 int CAN_Init();
 
-void can2ascii(char* _string, can_t _can);
+void can2ascii(char* _string, can_t* _can);
 
 bool ascii2can(char* _string, can_t* _can);
 

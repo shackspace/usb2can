@@ -100,8 +100,8 @@ int main(void)
 
 	for (;;)
 	{
-	    //CheckVirtualSerialCommands();
-		//CheckVirtualSerialCanMessages();
+	    CheckVirtualSerialCommands();
+		CheckVirtualSerialCanMessages();
 
         if( can_check_free_buffer())
         {
@@ -161,6 +161,7 @@ void CheckVirtualSerialCanMessages(void)
     static unsigned char buffer_pos = 0;
     static unsigned char buffer[MAX_BUFFER_LENGTH] = "";
     char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+    can_t can_message;
     int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //return negative value while no new bytes are available
     unsigned char i,j = 0;
 	while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
@@ -179,15 +180,21 @@ void CheckVirtualSerialCanMessages(void)
             for(j = 0; j < i; j++)       //copy all chars to message except '\n'
             {
                 ascii_message[j] = buffer[j];  //copy
+                if(ascii2can(ascii_message, &can_message))
+                    can_send_message(&can_message);
             }
         }
-        for(j = 0; j <= i && (i+j+2) < MAX_BUFFER_LENGTH; j++)    //cut all chars before and including ’\n’, move following chars to front
+        for(j = 0; j <= i && (i+j) < (MAX_BUFFER_LENGTH - 2); j++)    //cut all chars before and including ’\n’, move following chars to front
         {
             buffer[j] = buffer[i+j+1];                  //don't copy the char '\n' (+1)
         }
         buffer[i+j+1] = 0;
     }
 
+    if(can_get_message(&can_message))
+    {
+        can2ascii(ascii_message, &can_message);
+    }
 }
 
 /** Event handler for the library USB Connection event. */
