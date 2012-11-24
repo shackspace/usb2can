@@ -6,6 +6,7 @@
 
 #include "USB2Can.h"
 #include "CAN_Module.h"
+#include <string.h>
 
 #define MAX_BUFFER_LENGTH 128
 
@@ -80,7 +81,6 @@ int main(void)
 {
 	SetupHardware();
 
-	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 	sei();
 
 	//DDRB |= (1 << 3);
@@ -139,7 +139,6 @@ void SetupHardware(void)
 	clock_prescale_set(clock_div_1);
 
 	/* Hardware Initialization */
-	LEDs_Init();
 	USB_Init();
 
 	CAN_Init();
@@ -191,22 +190,23 @@ void CheckVirtualSerialCanMessages(void)
         buffer[i+j+1] = 0;
     }
 
-    if(can_get_message(&can_message))
+    if(can_get_message(&can_message))   //true if message could be recieved
     {
-        can2ascii(ascii_message, &can_message);
+        can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
+        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
     }
 }
 
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
 {
-	LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
+
 }
 
 /** Event handler for the library USB Disconnection event. */
 void EVENT_USB_Device_Disconnect(void)
 {
-	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
+
 }
 
 /** Event handler for the library USB Configuration Changed event. */
@@ -217,7 +217,6 @@ void EVENT_USB_Device_ConfigurationChanged(void)
 	ConfigSuccess &= CDC_Device_ConfigureEndpoints(&VirtualSerial1_CDC_Interface);
 	ConfigSuccess &= CDC_Device_ConfigureEndpoints(&VirtualSerial2_CDC_Interface);
 
-	LEDs_SetAllLEDs(ConfigSuccess ? LEDMASK_USB_READY : LEDMASK_USB_ERROR);
 }
 
 /** Event handler for the library USB Control Request reception event. */
