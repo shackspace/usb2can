@@ -222,7 +222,7 @@ void CheckVirtualSerialCanMessages(void)
             }
             else
             {
-                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "OK");   //ACK
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "NOK");   //ACK
                 CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
             }
 
