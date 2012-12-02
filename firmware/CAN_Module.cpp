@@ -1,7 +1,11 @@
 #include "CAN_Module.h"
+#ifndef TEST
 #include <util/delay.h>
+#endif
+#include <string.h>
+#include <ctype.h>
 
-prog_uint8_t can_filter[] = 
+prog_uint8_t can_filter[] =
 {
 	// Group 0
 	MCP2515_FILTER(0),              // Filter 0
@@ -23,7 +27,7 @@ int CAN_Init()
 {
 	if(can_module_initialized)
 		return 0;
-
+    #ifndef TEST
 	// enable SPI master mode by setting B0 as an output ping
 	DDRB |= _BV(0);
 
@@ -44,6 +48,7 @@ int CAN_Init()
 
 	// set the filters.
 	can_static_filter(can_filter);
+	#endif
 	can_module_initialized = true;
 
 	//can_set_mode(LISTEN_ONLY_MODE); //first set adapter passive
@@ -81,7 +86,7 @@ void can2ascii(char* _string, can_t* _can)
 	_string[7] = nibble_to_ascii(_can->id >> 4);
 	_string[8] = nibble_to_ascii(_can->id);
 #if SUPPORT_EXTENDED_CANID
-	_string[9] = _can->flags.rtr + (_can->flags.extended << 1) + 'R';
+	_string[9] = _can->flags.rtr + ((unsigned char)(_can->flags.extended) << 1) + 'R';
 #else
 	_string[9] = _can->flags.rtr + 'R';
 #endif
@@ -100,11 +105,11 @@ bool ascii2can(char* _string, can_t* _can)
 	int i;
 	if(_string[0] == 'I') //identifier
 	{
-		for(i = 1; i < 8; i++)
+		for(i = 1; i < 9; i++)
 		{
 			
 			_can->id = _can->id << 4;
-			if(!isdigit(_string[i])) 
+			if(isdigit(_string[i]))
 				_can->id |= (_string[i] - '0');
 			else if (_string[i] >= 'A' && _string[i] <= 'F')
 				_can->id |= _string[i] - 'A' + 0x0A;
@@ -112,32 +117,32 @@ bool ascii2can(char* _string, can_t* _can)
 		}
 	}
 #if SUPPORT_EXTENDED_CANID
-	if(_string[9] >= 'R' && _string[9] <= 'U')
+	if(_string[9] >= 'O' && _string[9] <= 'R')
 	{
 		_can->flags.rtr = (_string[9] - 'R') & 0x01;
 		_can->flags.extended = ((_string[9] - 'R') >> 1) & 0x01;
 	}
 #else
-	if(_string[9] >= 'R' && _string[9] = 'U')
+	if(_string[9] >= 'R' && _string[9] <= 'U')
 	{
 		_can->flags.rtr = (_string[9] - 'R') & 0x01;
 	}
 #endif
 	else
 		return false;
-	if(_string[10] >= '0' && _string[10] <= '8')
+	if(_string[10] >= '0' && _string[10] <= '4')
 		_can->length = _string[10] - '0';
 	for(i = 0; i < _can->length; i++)
 	{
 		if(_string[11 + i * 2] == 0 || _string[12 + i * 2] == 0)
 			return false;		
-		if(!isdigit(_string[11 + i*2]))
+		if(isdigit(_string[11 + i*2]))
 			_can->data[i] = (_string[11 + i*2] - '0') << 4;
 		else if(_string[11 + i*2] >= 'A' && _string[11 + i*2] <= 'F')
 			_can->data[i] = (_string[11 + i*2] - 'A' + 0x0A) << 4;
 		else return false;
 
-		if(!isdigit(_string[12 + i*2]))
+		if(isdigit(_string[12 + i*2]))
 			_can->data[i] = _can->data[i] + (_string[12 + i*2] - '0');
 		else if(_string[12 + i*2] >= 'A' && _string[12 + i*2] <= 'F')
 			_can->data[i] = _can->data[i] + (_string[12 + i*2] - 'A' + 0x0A);
