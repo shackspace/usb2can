@@ -8,7 +8,8 @@
 #include "CAN_Module.h"
 #include <string.h>
 
-#define MAX_BUFFER_LENGTH 128
+
+
 
 /** LUFA CDC Class driver interface configuration and state information. This structure is
  *  passed to all CDC Class driver functions, so that multiple instances of the same class
@@ -110,7 +111,7 @@ int main(void)
             {
                 //can_get_message(&retrieved_message);
                 //if(retrieved_message.id == 40)
-                    PORTE ^= (1 << 6);
+
             }
         }
 
@@ -150,23 +151,122 @@ void SetupHardware(void)
 //using VirtualSerial1 for configuration purpose
 void CheckVirtualSerialCommands(void)
 {
+    if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) > 0)
+    {
+        can_t message;
+        message.id = 40;
+        message.flags.rtr = 0;
+        message.flags.extended = 1;
+        message.length = 2;
+        message.data[0] = 0x0F;
+        message.data[1] = 0xF0;
+
+        can_t message2;
+        message2.id = 0;
+        message2.flags.rtr = 0;
+        message2.flags.extended = 0;
+        message2.length = 0;
+        message2.data[0] = 0;
+
+        char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+
+
+
+        can2ascii(ascii_message, &message);       //convert current can message to ascii code
+        if(ascii2can(ascii_message, &message2))
+            CDC_Device_SendString(&VirtualSerial1_CDC_Interface, "Conversation successfull\n");   //testing message
+        else
+            CDC_Device_SendString(&VirtualSerial1_CDC_Interface, "Conversation not successfull\n");
+
+        can2ascii(ascii_message, &message2);
+
+        CDC_Device_SendString(&VirtualSerial1_CDC_Interface, ascii_message);   //and send it over usb
+    }
 
 
 }
 
+void CheckVirtualSerialCanMessages(void)
+{
+    static unsigned char buffer_pos = 0;
+    static char buffer[MAX_BUFFER_LENGTH];
+
+    int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //returns a negative number while no new data is available
+
+    while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
+    {
+        CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
+        buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
+        buffer_pos++;                      //hopp to next buffer position
+        ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //get next char - returns negative value while no new bytes are available
+    }
+    buffer[buffer_pos] = 0; //terminated by zero
+
+    if(buffer_pos != 0)
+    {
+        int end_of_ascii_message =  ascii_message_exists(buffer);
+
+        if(end_of_ascii_message > 0)
+        {
+            char temp[MAX_BUFFER_LENGTH];
+
+            get_substring(buffer, temp, 0, end_of_ascii_message);
+
+            can_t can_message;
+
+            if(ascii2can(temp, &can_message))    //if conversation is successfull --> send message
+            {
+                can_send_message(&can_message);
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "OK");   //ACK
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+            }
+            else
+            {
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "OK");   //ACK
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+            }
+
+        }
+        else if(buffer_pos > ASCII_CAN_MESSAGE_LENGTH)
+        {   //when buffer is longer than one ascii can message than snip front of buffer ---> buffer gets emptied
+            char temp[MAX_BUFFER_LENGTH];
+            get_substring(buffer, temp, 1, strlen(buffer));
+            memcpy(buffer, temp, strlen(temp)+1);
+        }
+
+    }
+
+    can_t can_message;
+    if(can_get_message(&can_message))   //true if message could be recieved
+    {
+        char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+        can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
+        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
+        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+    }
+}
+
+/*
 //Can messages are transmitted via VirtualSerial2 to computer
 void CheckVirtualSerialCanMessages(void)
 {
     static unsigned char buffer_pos = 0;
     static unsigned char buffer[MAX_BUFFER_LENGTH] = "";
-    char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+
+    int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //returns negative value while no new bytes are available
+    if(ReceivedByte < 0)
+        return; //nothing to do! no new messages
+
+    //begin interpret new messsages ==>
     can_t can_message;
-    int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //return negative value while no new bytes are available
     unsigned char i,j = 0;
+    char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
 	while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
     {
+        CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
         buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
         buffer_pos++;                      //hopp to next buffer position
+        ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //get next char - returns negative value while no new bytes are available
     }
     buffer[buffer_pos] = 0; //terminated by zero
 
@@ -180,7 +280,10 @@ void CheckVirtualSerialCanMessages(void)
             {
                 ascii_message[j] = buffer[j];  //copy
                 if(ascii2can(ascii_message, &can_message))
+                {
                     can_send_message(&can_message);
+                    PORTE |= (1 << 6);
+                }
             }
         }
         for(j = 0; j <= i && (i+j) < (MAX_BUFFER_LENGTH - 2); j++)    //cut all chars before and including ’\n’, move following chars to front
@@ -195,18 +298,18 @@ void CheckVirtualSerialCanMessages(void)
         can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
         CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
     }
-}
+}  */
 
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
 {
-
+    //PORTE |= (1 << 6);
 }
 
 /** Event handler for the library USB Disconnection event. */
 void EVENT_USB_Device_Disconnect(void)
 {
-
+    //PORTE &= ~(1 << 6);
 }
 
 /** Event handler for the library USB Configuration Changed event. */

@@ -54,8 +54,10 @@
  */
 // ----------------------------------------------------------------------------
 
+#ifndef TEST
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#endif
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -63,7 +65,6 @@
 #include "config.h"
 
 typedef uint8_t prog_uint8_t;
-
 // ----------------------------------------------------------------------------
 /** \ingroup	can_interface
  *  \name		Bitdefinitionen
@@ -175,13 +176,13 @@ typedef struct
 	#if SUPPORT_EXTENDED_CANID	
 		uint32_t id;				//!< ID der Nachricht (11 oder 29 Bit)
 		struct {
-			int rtr : 1;			//!< Remote-Transmit-Request-Frame?
-			int extended : 1;		//!< extended ID?
+			unsigned int rtr : 1;			//!< Remote-Transmit-Request-Frame?
+			unsigned int extended : 1;		//!< extended ID?
 		} flags;
 	#else
 		uint16_t id;				//!< ID der Nachricht (11 Bit)
 		struct {
-			int rtr : 1;			//!< Remote-Transmit-Request-Frame?
+			unsigned int rtr : 1;			//!< Remote-Transmit-Request-Frame?
 		} flags;
 	#endif
 	

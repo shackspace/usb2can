@@ -6,6 +6,11 @@
 #ifndef _USB_2_CAN_H_
 #define _USB_2_CAN_H_
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 	/* Includes: */
 		#include <avr/io.h>
 		#include <avr/wdt.h>
@@ -26,6 +31,12 @@
 		void EVENT_USB_Device_Disconnect(void);
 		void EVENT_USB_Device_ConfigurationChanged(void);
 		void EVENT_USB_Device_ControlRequest(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+
 
 #endif
 

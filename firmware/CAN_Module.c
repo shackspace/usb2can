@@ -117,7 +117,7 @@ bool ascii2can(char* _string, can_t* _can)
 		}
 	}
 #if SUPPORT_EXTENDED_CANID
-	if(_string[9] >= 'O' && _string[9] <= 'R')
+	if(_string[9] >= 'R' && _string[9] <= 'U')
 	{
 		_can->flags.rtr = (_string[9] - 'R') & 0x01;
 		_can->flags.extended = ((_string[9] - 'R') >> 1) & 0x01;
@@ -135,7 +135,7 @@ bool ascii2can(char* _string, can_t* _can)
 	for(i = 0; i < _can->length; i++)
 	{
 		if(_string[11 + i * 2] == 0 || _string[12 + i * 2] == 0)
-			return false;		
+			return false;
 		if(isdigit(_string[11 + i*2]))
 			_can->data[i] = (_string[11 + i*2] - '0') << 4;
 		else if(_string[11 + i*2] >= 'A' && _string[11 + i*2] <= 'F')
@@ -150,4 +150,35 @@ bool ascii2can(char* _string, can_t* _can)
 	}
 		
 	return true;
+}
+
+
+int ascii_message_exists(char* str)
+{
+    int i;
+    if(str[0] == 'I')
+    {
+        for(i=0; i <= ASCII_CAN_MESSAGE_LENGTH && str[i] != '\n'; i++);
+
+        if(str[i] == '\n')
+        {
+            return i;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    else
+        return -1;
+}
+
+void get_substring(char* src, char *dest, unsigned int begin, unsigned int end)
+{
+    unsigned int i;
+    for(i = 0; (i < (end - begin)) && (i < (strlen(src) - begin)); i++)
+    {
+        dest[i] = src[begin + i];
+    }
+    dest[i] = 0;
 }
