@@ -21,6 +21,20 @@ int get_line(char* buffer, char* token)
 
 int decode_command(char* line)
 {
+    int i = 0;
+    int length = strlen(line);
+    while((line[0] == ' ') && (i < length)) //strip whitespaces
+    {
+        i++;
+    }
 
+    if(i != length)
+    {
+
+    }
+    else
+    {
+        return -1;
+    }
 
 }
