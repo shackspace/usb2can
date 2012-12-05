@@ -16,7 +16,9 @@ SET ( HEADER_FILES
 
 SET ( SOURCE_FILES
 	can_message_test.cpp
+	interpreter_test.cpp
 	../CAN_Module.c
+	../Interpreter.c
 )
 
 add_definitions( -DTEST -Dgtest_build_tests=ON	)

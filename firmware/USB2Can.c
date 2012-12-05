@@ -148,8 +148,8 @@ void SetupHardware(void)
     PORTE &= ~(1 << 6);
 }
 
-//using VirtualSerial1 for configuration purpose
-void CheckVirtualSerialCommands(void)
+
+void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for configuration purpose and slow can message interface
 {
     if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) > 0)
     {
@@ -186,7 +186,7 @@ void CheckVirtualSerialCommands(void)
 
 }
 
-void CheckVirtualSerialCanMessages(void)
+void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message interface
 {
     static unsigned char buffer_pos = 0;
     static char buffer[MAX_BUFFER_LENGTH];
@@ -225,6 +225,10 @@ void CheckVirtualSerialCanMessages(void)
                 CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "NOK");   //ACK
                 CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
             }
+
+            get_substring(buffer, temp, end_of_ascii_message, strlen(buffer));
+
+            memcpy(buffer, temp, strlen(temp)+1);
 
         }
         else if(buffer_pos > ASCII_CAN_MESSAGE_LENGTH)
