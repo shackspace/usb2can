@@ -14,4 +14,12 @@ TEST(GET_LINE, POSITIVE)
 	get_line(test_string, buffer);
 
 	EXPECT_EQ(0, strcmp(buffer, "Test1"));
+
+	get_line(test_string, buffer);
+
+    EXPECT_EQ(0, strcmp(buffer, "Test2"));
+
+    get_line(test_string, buffer);
+
+    EXPECT_EQ(0, strcmp(buffer, "Test3"));
 }
