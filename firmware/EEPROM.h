@@ -2,7 +2,9 @@
 
 typedef struct
 {
-	int bitrate;
+	char bitrate;
+	char transciever_mode;
+	char listening_enabled;
 } Config;
 
 extern Config config;

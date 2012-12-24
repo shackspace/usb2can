@@ -97,34 +97,39 @@ int main(void)
 
     can_t retrieved_message;
 
-    can_set_mode(LOOPBACK_MODE);
+    can_send_message(&message);
+    //can_set_mode(LOOPBACK_MODE);
 
 	for (;;)
 	{
 	    CheckVirtualSerialCommands();
 		CheckVirtualSerialCanMessages();
 
-        if( can_check_free_buffer())
-        {
-            can_send_message(&message);
+      //  if( can_check_free_buffer())
+        //{
+
+
             //if(can_check_message())
-            {
+            //{
                 //can_get_message(&retrieved_message);
                 //if(retrieved_message.id == 40)
 
-            }
-        }
+            //}
+       //    }
 
 		/* Discard all received data on the first CDC interface */
-		CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface);
+		//CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface);
 
 		/* Echo all received data on the second CDC interface */
-		int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface);
-		if (!(ReceivedByte < 0))
-		  CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, (uint8_t)ReceivedByte);
+		//int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface);
+		//if (!(ReceivedByte < 0))
+		//  CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, (uint8_t)ReceivedByte);
+
+        //PORTE &= ~(1 << 6);
 
 		CDC_Device_USBTask(&VirtualSerial1_CDC_Interface);
 		CDC_Device_USBTask(&VirtualSerial2_CDC_Interface);
+
 		USB_USBTask();
 	}
 }
@@ -154,7 +159,7 @@ void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for co
     if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) > 0)
     {
         can_t message;
-        message.id = 40;
+        message.id = 42;
         message.flags.rtr = 0;
         message.flags.extended = 1;
         message.length = 2;
@@ -240,14 +245,20 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     }
 
+    PORTE |= (1 << 6);
     can_t can_message;
     if(can_get_message(&can_message))   //true if message could be recieved
     {
+        if(PORTE & (1 << 6))
+            PORTE &= ~(1 << 6);
+        else
+            PORTE |= (1 << 6);
         char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
         can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
         CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
         CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
     }
+    PORTE &= ~(1 << 6);
 }
 
 /*
