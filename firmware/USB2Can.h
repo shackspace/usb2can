@@ -32,6 +32,9 @@ extern "C"
 		void EVENT_USB_Device_ConfigurationChanged(void);
 		void EVENT_USB_Device_ControlRequest(void);
 
+		void send_command_string(char* str);
+		void send_can_string(char* str);
+
 #ifdef __cplusplus
 }
 #endif

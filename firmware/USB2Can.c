@@ -88,7 +88,7 @@ int main(void)
 	//PORTB |= (1 << 3);
 
 	can_t message;
-	message.id = 40;
+	message.id = 41;
 	message.flags.rtr = 0;
 	message.flags.extended = 1;
     message.length = 2;
@@ -98,7 +98,7 @@ int main(void)
     can_t retrieved_message;
 
     can_send_message(&message);
-    //can_set_mode(LOOPBACK_MODE);
+    can_set_mode(LOOPBACK_MODE);
 
 	for (;;)
 	{
@@ -116,6 +116,7 @@ int main(void)
 
             //}
        //    }
+
 
 		/* Discard all received data on the first CDC interface */
 		//CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface);
@@ -151,12 +152,15 @@ void SetupHardware(void)
 
 	DDRE |= (1 << 6);
     PORTE &= ~(1 << 6);
+
+    PORTB &= ~(1 << 5);    //B5 is input
+    PORTB |= (1 << 5);     //B5 has pull-up
 }
 
 
 void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for configuration purpose and slow can message interface
 {
-    if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) > 0)
+    if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) >= 0)
     {
         can_t message;
         message.id = 42;
@@ -198,7 +202,7 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //returns a negative number while no new data is available
 
-    while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
+    while((ReceivedByte >= 0) && (buffer_pos < (MAX_BUFFER_LENGTH -1)))
     {
         CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
         buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
@@ -207,7 +211,7 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
     }
     buffer[buffer_pos] = 0; //terminated by zero
 
-    if(buffer_pos != 0)
+    if(buffer_pos >= ASCII_CAN_MESSAGE_LENGTH - 16) //length of buffer contains at a full can message (with at least zero data bytes)
     {
         int end_of_ascii_message =  ascii_message_exists(buffer);
 
@@ -223,12 +227,12 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
             {
                 can_send_message(&can_message);
                 CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "OK");   //ACK
-                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\r\n");   //new line after message
             }
             else
             {
                 CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "NOK");   //ACK
-                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+                CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\r\n");   //new line after message
             }
 
             get_substring(buffer, temp, end_of_ascii_message, strlen(buffer));
@@ -238,27 +242,30 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
         }
         else if(buffer_pos > ASCII_CAN_MESSAGE_LENGTH)
         {   //when buffer is longer than one ascii can message than snip front of buffer ---> buffer gets emptied
+            PORTE |= (1 << 6);
             char temp[MAX_BUFFER_LENGTH];
-            get_substring(buffer, temp, 1, strlen(buffer));
+            get_substring(buffer, temp, 1, strlen(buffer)+1);
             memcpy(buffer, temp, strlen(temp)+1);
         }
 
     }
 
-    PORTE |= (1 << 6);
+    //PORTE |= (1 << 6);
     can_t can_message;
-    if(can_get_message(&can_message))   //true if message could be recieved
+    if(can_check_message())
     {
-        if(PORTE & (1 << 6))
-            PORTE &= ~(1 << 6);
-        else
-            PORTE |= (1 << 6);
-        char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
-        can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
-        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
-        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+        if(can_get_message(&can_message))   //true if message could be recieved
+        {
+            if(PORTE & (1 << 6))
+                PORTE &= ~(1 << 6);
+            else
+                PORTE |= (1 << 6);
+            char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+            can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
+            CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
+            CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
+        }
     }
-    PORTE &= ~(1 << 6);
 }
 
 /*
@@ -342,5 +349,16 @@ void EVENT_USB_Device_ControlRequest(void)
 {
 	CDC_Device_ProcessControlRequest(&VirtualSerial1_CDC_Interface);
 	CDC_Device_ProcessControlRequest(&VirtualSerial2_CDC_Interface);
+}
+
+
+void send_command_string(char* str)
+{
+    CDC_Device_SendString(&VirtualSerial1_CDC_Interface, str);
+}
+
+void send_can_string(char* str)
+{
+    CDC_Device_SendString(&VirtualSerial2_CDC_Interface, str);
 }
 

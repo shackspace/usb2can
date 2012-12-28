@@ -158,7 +158,7 @@ int ascii_message_exists(char* str)
     int i;
     if(str[0] == 'I')
     {
-        for(i=0; i <= ASCII_CAN_MESSAGE_LENGTH && str[i] != '\n'; i++);
+        for(i=1; (i < strlen(str)) && (i <= ASCII_CAN_MESSAGE_LENGTH) && (str[i] != '\n'); i++);
 
         if(str[i] == '\n')
         {

@@ -1,5 +1,13 @@
 #include "Interpreter.h"
+#include "CAN_Module.h"
 
+static can_t global_message = {0};
+
+#ifdef TEST
+char const main_menu_message[] = "USB-CAN-Converter\r\n";
+#else
+char const __attribute__((__progmem__)) main_menu_message[] = "USB-CAN-Converter\r\n";
+#endif
 
 
 int get_line(char* buffer, char* token)
@@ -37,8 +45,16 @@ int decode_command(char* line)
     {
         switch(line[i])
         {
+            case HELP_MESSAGE:
+                //send_command_string(main_menu_message);
+                return 0;
+                break;
             case TOGGLE_LISTEN:
+                return (unsigned)(char)(line[i]);
+                break;
             case SEND_MODE:
+                return (unsigned)(char)(line[i]);
+                break;
             case TRANSCIEVER_MODE:
                 return (unsigned char)(line[i]);
                 break;

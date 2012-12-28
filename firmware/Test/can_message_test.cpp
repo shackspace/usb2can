@@ -215,6 +215,20 @@ TEST(STRING_EXTRACT_TWO_ASCII_MESSAGES_AND_CONVERT_TO_CAN, POSITIVE)
 	
 }
 
+TEST(STRING_ASCII_MESSAGE_IS_CAN_MESSAGE, POSITIVE)
+{
+	char wrong_str[] = "DAS IST KEINE CAN NACHRICHT";
+
+	EXPECT_EQ(-1, ascii_message_exists(wrong_str));
+
+	EXPECT_EQ(-1, ascii_message_exists("kurz"));
+
+	EXPECT_EQ(strlen("I12345678T4FFEEDDCC\n") -1, ascii_message_exists("I12345678T4FFEEDDCC\n454545"));
+
+	EXPECT_EQ(strlen("I12345678T4FFEEDDCC\n") -1, ascii_message_exists("I12345678T4FFEEDDCC\n"));
+
+	EXPECT_EQ(-1, ascii_message_exists("I12345678T4FFEEDDCC"));
+}
 
 
 int main(int argv, char** argc)
@@ -222,3 +236,5 @@ int main(int argv, char** argc)
 	::testing::InitGoogleTest(&argv, argc);
 	return RUN_ALL_TESTS();
 }
+
+
