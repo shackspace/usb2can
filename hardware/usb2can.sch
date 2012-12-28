@@ -19507,6 +19507,18 @@ Feedback: rainer.bayer@hs-heilbronn.de&lt;/i&gt;&lt;/p&gt;</description>
 <junction x="259.08" y="10.16"/>
 </segment>
 </net>
+<net name="CAN_SOF" class="0">
+<segment>
+<pinref part="U3" gate="&gt;NAME" pin="CLKOUT"/>
+<wire x1="149.86" y1="25.4" x2="162.56" y2="25.4" width="0.1524" layer="91"/>
+<label x="154.94" y="25.4" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="U1" gate="PORTB" pin="(OC1B/PCINT6/OC4B/ADC13)PB6"/>
+<wire x1="60.96" y1="60.96" x2="73.66" y2="60.96" width="0.1524" layer="91"/>
+<label x="68.58" y="60.96" size="1.778" layer="95"/>
+</segment>
+</net>
 </nets>
 </sheet>
 </sheets>
