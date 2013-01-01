@@ -6,6 +6,8 @@
 #ifndef _USB_2_CAN_H_
 #define _USB_2_CAN_H_
 
+#define DEBUG
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -34,6 +36,10 @@ extern "C"
 
 		void send_command_string(char* str);
 		void send_can_string(char* str);
+
+		#ifdef DEBUG
+		void UART_Transmit( unsigned char data );
+		#endif
 
 #ifdef __cplusplus
 }

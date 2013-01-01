@@ -8,6 +8,21 @@
 #include "CAN_Module.h"
 #include <string.h>
 
+#ifdef DEBUG
+
+#define BAUD 9600UL      // Baudrate
+
+// Berechnungen
+#define UBRR_VAL ((F_CPU+BAUD*8)/(BAUD*16)-1)   // clever runden
+#define BAUD_REAL (F_CPU/(16*(UBRR_VAL+1)))     // Reale Baudrate
+#define BAUD_ERROR ((BAUD_REAL*1000)/BAUD) // Fehler in Promille, 1000 = kein Fehler.
+
+#if ((BAUD_ERROR<990) || (BAUD_ERROR>1010))
+  #error Systematischer Fehler der Baudrate grösser 1% und damit zu hoch!
+#endif
+
+#endif
+
 
 
 
@@ -155,6 +170,14 @@ void SetupHardware(void)
 
     PORTB &= ~(1 << 5);    //B5 is input
     PORTB |= (1 << 5);     //B5 has pull-up
+
+#ifdef DEBUG
+    //Debug UART Port:
+    UBRR1 = UBRR_VAL;
+
+    UCSR1B |= (1<<TXEN1);                           // UART TX einschalten
+    UCSR1C = (1<<UCSZ11)|(3<<UCSZ10); // Asynchron 8N1
+#endif
 }
 
 
@@ -204,6 +227,9 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     while((ReceivedByte >= 0) && (buffer_pos < (MAX_BUFFER_LENGTH -1)))
     {
+        #ifdef DEBUG
+        UART_Transmit(ReceivedByte);
+        #endif
         CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
         buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
         buffer_pos++;                      //hopp to next buffer position
@@ -242,10 +268,11 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
         }
         else if(buffer_pos > ASCII_CAN_MESSAGE_LENGTH)
         {   //when buffer is longer than one ascii can message than snip front of buffer ---> buffer gets emptied
-            PORTE |= (1 << 6);
+            //PORTE |= (1 << 6);
             char temp[MAX_BUFFER_LENGTH];
             get_substring(buffer, temp, 1, strlen(buffer)+1);
             memcpy(buffer, temp, strlen(temp)+1);
+            buffer_pos--;
         }
 
     }
@@ -362,3 +389,16 @@ void send_can_string(char* str)
     CDC_Device_SendString(&VirtualSerial2_CDC_Interface, str);
 }
 
+
+#ifdef DEBUG
+
+void UART_Transmit( unsigned char data )
+{
+    /* Wait for empty transmit buffer */
+    while ( !( UCSR1A & (1<<UDRE1)));
+
+    /* Put data into buffer, sends the data */
+    UDR1 = data;
+}
+
+#endif
