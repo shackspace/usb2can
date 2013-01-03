@@ -120,29 +120,6 @@ int main(void)
 	    CheckVirtualSerialCommands();
 		CheckVirtualSerialCanMessages();
 
-      //  if( can_check_free_buffer())
-        //{
-
-
-            //if(can_check_message())
-            //{
-                //can_get_message(&retrieved_message);
-                //if(retrieved_message.id == 40)
-
-            //}
-       //    }
-
-
-		/* Discard all received data on the first CDC interface */
-		//CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface);
-
-		/* Echo all received data on the second CDC interface */
-		//int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface);
-		//if (!(ReceivedByte < 0))
-		//  CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, (uint8_t)ReceivedByte);
-
-        //PORTE &= ~(1 << 6);
-
 		CDC_Device_USBTask(&VirtualSerial1_CDC_Interface);
 		CDC_Device_USBTask(&VirtualSerial2_CDC_Interface);
 
@@ -183,8 +160,12 @@ void SetupHardware(void)
 
 void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for configuration purpose and slow can message interface
 {
-    if(CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface) >= 0)
+    int16_t ReceivedByte;
+    if((ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface)) >= 0)
     {
+        /*#ifdef DEBUG
+            UART_Transmit(ReceivedByte);
+        #endif*/
         can_t message;
         message.id = 42;
         message.flags.rtr = 0;
@@ -218,6 +199,10 @@ void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for co
 
 }
 
+#ifdef TEST
+char* test_string_message = "MESSAGE";
+#endif
+
 void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message interface
 {
     static unsigned char buffer_pos = 0;
@@ -227,9 +212,14 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     while((ReceivedByte >= 0) && (buffer_pos < (MAX_BUFFER_LENGTH -1)))
     {
-        #ifdef DEBUG
-        UART_Transmit(ReceivedByte);
-        #endif
+#ifdef TEST
+
+
+        //UART_Transmit(ReceivedByte);
+        if((unsigned char)ReceivedByte == CAN_ASCII_MESSAGE_END_CHAR)
+           UART_SendString(test_string_message);
+           //UART_Transmit('a');
+#endif
         CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
         buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
         buffer_pos++;                      //hopp to next buffer position
@@ -281,73 +271,24 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
     can_t can_message;
     if(can_check_message())
     {
-        if(can_get_message(&can_message))   //true if message could be recieved
+#ifdef DEBUG
+        PORTE |= (1 << 6);      //show debug led when message arrived
+#endif
+/*        if(can_get_message(&can_message))   //true if message could be recieved
         {
-            if(PORTE & (1 << 6))
-                PORTE &= ~(1 << 6);
-            else
-                PORTE |= (1 << 6);
+#ifdef DEBUG
+            //if(PORTE & (1 << 6))
+            //    PORTE &= ~(1 << 6);
+            //else
+            //    PORTE |= (1 << 6);
+#endif
             char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
             can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
             CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
             CDC_Device_SendString(&VirtualSerial2_CDC_Interface, "\n");   //new line after message
-        }
+        }   */
     }
 }
-
-/*
-//Can messages are transmitted via VirtualSerial2 to computer
-void CheckVirtualSerialCanMessages(void)
-{
-    static unsigned char buffer_pos = 0;
-    static unsigned char buffer[MAX_BUFFER_LENGTH] = "";
-
-    int16_t ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //returns negative value while no new bytes are available
-    if(ReceivedByte < 0)
-        return; //nothing to do! no new messages
-
-    //begin interpret new messsages ==>
-    can_t can_message;
-    unsigned char i,j = 0;
-    char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
-	while(!(ReceivedByte < 0) && buffer_pos < (MAX_BUFFER_LENGTH -1))
-    {
-        CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
-        buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
-        buffer_pos++;                      //hopp to next buffer position
-        ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //get next char - returns negative value while no new bytes are available
-    }
-    buffer[buffer_pos] = 0; //terminated by zero
-
-    while(i < MAX_BUFFER_LENGTH) //no ascii can messages found
-    {
-        for(i = 0; i < MAX_BUFFER_LENGTH && buffer[i] != '\n'; i++); //search for char '\n'
-
-        if(i <=  ASCII_CAN_MESSAGE_LENGTH)  //char '\n' found before end of buffer, i is position of '\n'
-        {                                  //message has a valid length --> should not be longer then ASCII_CAN_MESSAGE_LENGTH
-            for(j = 0; j < i; j++)       //copy all chars to message except '\n'
-            {
-                ascii_message[j] = buffer[j];  //copy
-                if(ascii2can(ascii_message, &can_message))
-                {
-                    can_send_message(&can_message);
-                    PORTE |= (1 << 6);
-                }
-            }
-        }
-        for(j = 0; j <= i && (i+j) < (MAX_BUFFER_LENGTH - 2); j++)    //cut all chars before and including ’\n’, move following chars to front
-        {
-            buffer[j] = buffer[i+j+1];                  //don't copy the char '\n' (+1)
-        }
-        buffer[i+j+1] = 0;
-    }
-
-    if(can_get_message(&can_message))   //true if message could be recieved
-    {
-        can2ascii(ascii_message, &can_message);       //convert current can message to ascii code
-        CDC_Device_SendString(&VirtualSerial2_CDC_Interface, ascii_message);   //and send it over usb
-    }
-}  */
 
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
@@ -399,6 +340,20 @@ void UART_Transmit( unsigned char data )
 
     /* Put data into buffer, sends the data */
     UDR1 = data;
+}
+
+void UART_SendString( char* string)
+{
+    while(*string != 0)
+    {
+        UART_Transmit(*string);
+        string++;
+
+        CDC_Device_USBTask(&VirtualSerial1_CDC_Interface); //USB-Task is executed between sending the next char
+        CDC_Device_USBTask(&VirtualSerial2_CDC_Interface); //so USB connection can't get lost
+
+        USB_USBTask();
+    }
 }
 
 #endif

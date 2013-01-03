@@ -16,7 +16,7 @@ TEST(STRING_SUBSTRING, POSITIVE)
 
 TEST(STRING_ASCII_MESSAGE_EXISTS, POSITIVE)
 {
-	char* test_string = (char*)"I12345678T4FFEEDDCC\n";
+	char* test_string = (char*)"I12345678T4FFEEDDCC;";
 	
 	EXPECT_EQ(strlen(test_string)-1, ascii_message_exists(test_string));
 	
@@ -24,7 +24,7 @@ TEST(STRING_ASCII_MESSAGE_EXISTS, POSITIVE)
 
 TEST(STRING_EXTRACT_ASCII_MESSAGE_IF_EXISTS, POSITIVE)
 {
-	char* test_string = (char*)"I12345678T4FFEEDDCC\n5443455";
+	char* test_string = (char*)"I12345678T4FFEEDDCC;5443455";
 	char buffer[MAX_BUFFER_LENGTH];
 	
 	int end_of_ascii_string = ascii_message_exists(test_string);
@@ -92,7 +92,7 @@ TEST(ASCII_TO_CAN_TEST, POSITIVE)
 
 TEST(STRING_EXTRACT_ASCII_MESSAGE_AND_CONVERT_TO_CAN, POSITIVE)
 {
-	char* test_string = (char*)"I12345678T4FFEEDDCC\n5443455";
+	char* test_string = (char*)"I12345678T4FFEEDDCC;5443455";
 	char buffer[MAX_BUFFER_LENGTH];
 	
 	int end_of_ascii_string = ascii_message_exists(test_string);
@@ -131,7 +131,7 @@ TEST(STRING_EXTRACT_TWO_ASCII_MESSAGES_AND_CONVERT_TO_CAN, POSITIVE)
 {
 	char test_string[MAX_BUFFER_LENGTH];
 
-	memcpy(test_string,(char*)"I12345678T4FFEEDDCC\nI12345678T4FFEEDDCC\n454545", strlen("I12345678T4FFEEDDCC\nI12345678T4FFEEDDCC\n454545") + 1);
+	memcpy(test_string,(char*)"I12345678T4FFEEDDCC;I12345678T4FFEEDDCC;454545", strlen("I12345678T4FFEEDDCC;I12345678T4FFEEDDCC;454545") + 1);
 	char buffer[MAX_BUFFER_LENGTH];
 	
 	int end_of_ascii_string = ascii_message_exists(test_string);
@@ -173,13 +173,13 @@ TEST(STRING_EXTRACT_TWO_ASCII_MESSAGES_AND_CONVERT_TO_CAN, POSITIVE)
 
 	//std::cout << buffer << std::endl;
 
-	EXPECT_EQ(0, strcmp("I12345678T4FFEEDDCC\n454545", buffer));
+	EXPECT_EQ(0, strcmp("I12345678T4FFEEDDCC;454545", buffer));
 
 	memcpy(test_string, buffer, strlen(buffer)+1);
 	
 	//std::cout << test_string << std::endl;
 
-	EXPECT_EQ(0, strcmp("I12345678T4FFEEDDCC\n454545", test_string));
+	EXPECT_EQ(0, strcmp("I12345678T4FFEEDDCC;454545", test_string));
 
 	end_of_ascii_string = ascii_message_exists(test_string);
 	
@@ -223,9 +223,9 @@ TEST(STRING_ASCII_MESSAGE_IS_CAN_MESSAGE, POSITIVE)
 
 	EXPECT_EQ(-1, ascii_message_exists("kurz"));
 
-	EXPECT_EQ(strlen("I12345678T4FFEEDDCC\n") -1, ascii_message_exists("I12345678T4FFEEDDCC\n454545"));
+	EXPECT_EQ(strlen("I12345678T4FFEEDDCC;") -1, ascii_message_exists("I12345678T4FFEEDDCC;454545"));
 
-	EXPECT_EQ(strlen("I12345678T4FFEEDDCC\n") -1, ascii_message_exists("I12345678T4FFEEDDCC\n"));
+	EXPECT_EQ(strlen("I12345678T4FFEEDDCC;") -1, ascii_message_exists("I12345678T4FFEEDDCC;"));
 
 	EXPECT_EQ(-1, ascii_message_exists("I12345678T4FFEEDDCC"));
 }

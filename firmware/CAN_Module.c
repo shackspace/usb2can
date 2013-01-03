@@ -69,7 +69,7 @@ inline char nibble_to_ascii(uint8_t nibble)
 void can2ascii(char* _string, can_t* _can)
 {
 	int i = 0;
-	_string[0] = 'I'; //Start CAN Message with ID
+	_string[0] = CAN_ASCII_MESSAGE_BEGIN_CHAR; //Start CAN Message with ID
 #if SUPPORT_EXTENDED_CANID
 	_string[1] = nibble_to_ascii(_can->id >> 28);
 	_string[2] = nibble_to_ascii(_can->id >> 24);
@@ -103,7 +103,7 @@ void can2ascii(char* _string, can_t* _can)
 bool ascii2can(char* _string, can_t* _can)
 {
 	int i;
-	if(_string[0] == 'I') //identifier
+	if(_string[0] == CAN_ASCII_MESSAGE_BEGIN_CHAR) //identifier
 	{
 		for(i = 1; i < 9; i++)
 		{
@@ -156,11 +156,11 @@ bool ascii2can(char* _string, can_t* _can)
 int ascii_message_exists(char* str)
 {
     int i;
-    if(str[0] == 'I')
+    if(str[0] == CAN_ASCII_MESSAGE_BEGIN_CHAR)
     {
-        for(i=1; (i < strlen(str)) && (i <= ASCII_CAN_MESSAGE_LENGTH) && (str[i] != '\n'); i++);
+        for(i=1; (i < strlen(str)) && (i <= ASCII_CAN_MESSAGE_LENGTH) && (str[i] != CAN_ASCII_MESSAGE_END_CHAR); i++);
 
-        if(str[i] == '\n')
+        if(str[i] == CAN_ASCII_MESSAGE_END_CHAR)
         {
             return i;
         }

@@ -25,6 +25,9 @@
 
 #define MAX_BUFFER_LENGTH 128
 
+#define CAN_ASCII_MESSAGE_BEGIN_CHAR 'I'
+#define CAN_ASCII_MESSAGE_END_CHAR ';'
+
 #ifdef __cplusplus
 extern "C"
 {

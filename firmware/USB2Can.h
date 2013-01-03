@@ -7,6 +7,7 @@
 #define _USB_2_CAN_H_
 
 #define DEBUG
+#define TEST
 
 #ifdef __cplusplus
 extern "C"
@@ -39,6 +40,7 @@ extern "C"
 
 		#ifdef DEBUG
 		void UART_Transmit( unsigned char data );
+		void UART_SendString( char* str);
 		#endif
 
 #ifdef __cplusplus
