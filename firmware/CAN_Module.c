@@ -132,6 +132,8 @@ bool ascii2can(char* _string, can_t* _can)
 		return false;
 	if(_string[10] >= '0' && _string[10] <= '4')
 		_can->length = _string[10] - '0';
+	else
+	    return false;
 	for(i = 0; i < _can->length; i++)
 	{
 		if(_string[11 + i * 2] == 0 || _string[12 + i * 2] == 0)

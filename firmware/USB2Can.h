@@ -7,7 +7,6 @@
 #define _USB_2_CAN_H_
 
 #define DEBUG
-#define TEST
 
 #ifdef __cplusplus
 extern "C"

@@ -199,7 +199,7 @@ void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for co
 
 }
 
-#ifdef TEST
+#ifdef DEBUG
 char* test_string_message = "MESSAGE";
 #endif
 
@@ -212,7 +212,7 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     while((ReceivedByte >= 0) && (buffer_pos < (MAX_BUFFER_LENGTH -1)))
     {
-#ifdef TEST
+#ifdef DEBUG
 
 
         //UART_Transmit(ReceivedByte);
@@ -227,7 +227,7 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
     }
     buffer[buffer_pos] = 0; //terminated by zero
 
-    if(buffer_pos >= ASCII_CAN_MESSAGE_LENGTH - 16) //length of buffer contains at a full can message (with at least zero data bytes)
+    if(buffer_pos >= ASCII_CAN_MESSAGE_LENGTH - 16) //length of buffer contains at a full can message (with at least zero data bytes)  --> possible can message
     {
         int end_of_ascii_message =  ascii_message_exists(buffer);
 
@@ -254,9 +254,10 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
             get_substring(buffer, temp, end_of_ascii_message, strlen(buffer));
 
             memcpy(buffer, temp, strlen(temp)+1);
+            buffer_pos = strlen(temp);
 
         }
-        else if(buffer_pos > ASCII_CAN_MESSAGE_LENGTH)
+        else if(buffer_pos > 0 && ((buffer[0] != CAN_ASCII_MESSAGE_BEGIN_CHAR) || (buffer_pos > ASCII_CAN_MESSAGE_LENGTH)))
         {   //when buffer is longer than one ascii can message than snip front of buffer ---> buffer gets emptied
             //PORTE |= (1 << 6);
             char temp[MAX_BUFFER_LENGTH];
