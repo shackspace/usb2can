@@ -21,6 +21,8 @@
   #error Systematischer Fehler der Baudrate grösser 1% und damit zu hoch!
 #endif
 
+char* test_string_message = "MESSAGE";
+
 #endif
 
 
@@ -113,7 +115,7 @@ int main(void)
     can_t retrieved_message;
 
     can_send_message(&message);
-    can_set_mode(LOOPBACK_MODE);
+    //can_set_mode(LOOPBACK_MODE);
 
 	for (;;)
 	{
@@ -163,45 +165,27 @@ void CheckVirtualSerialCommands(void)   //channel 0: using VirtualSerial1 for co
     int16_t ReceivedByte;
     if((ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial1_CDC_Interface)) >= 0)
     {
-        /*#ifdef DEBUG
-            UART_Transmit(ReceivedByte);
-        #endif*/
         can_t message;
-        message.id = 42;
+        message.id = 0;
         message.flags.rtr = 0;
         message.flags.extended = 1;
-        message.length = 2;
-        message.data[0] = 0x0F;
-        message.data[1] = 0xF0;
+        message.length = 0;
+        message.data[0] = 0x00;
+        message.data[1] = 0x00;
+        message.data[2] = 0x00;
+        message.data[3] = 0x00;
 
-        can_t message2;
-        message2.id = 0;
-        message2.flags.rtr = 0;
-        message2.flags.extended = 0;
-        message2.length = 0;
-        message2.data[0] = 0;
+        #ifdef DEBUG
 
-        char ascii_message[ASCII_CAN_MESSAGE_LENGTH];
+        //UART_SendString(test_string_message);
 
-
-
-        can2ascii(ascii_message, &message);       //convert current can message to ascii code
-        if(ascii2can(ascii_message, &message2))
-            CDC_Device_SendString(&VirtualSerial1_CDC_Interface, "Conversation successfull\n");   //testing message
-        else
-            CDC_Device_SendString(&VirtualSerial1_CDC_Interface, "Conversation not successfull\n");
-
-        can2ascii(ascii_message, &message2);
-
-        CDC_Device_SendString(&VirtualSerial1_CDC_Interface, ascii_message);   //and send it over usb
+        #endif
     }
 
 
 }
 
-#ifdef DEBUG
-char* test_string_message = "MESSAGE";
-#endif
+
 
 void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message interface
 {
@@ -212,18 +196,10 @@ void CheckVirtualSerialCanMessages(void)  //cannel 1: high speed can message int
 
     while((ReceivedByte >= 0) && (buffer_pos < (MAX_BUFFER_LENGTH -1)))
     {
-#ifdef DEBUG
-
-
-        //UART_Transmit(ReceivedByte);
-        if((unsigned char)ReceivedByte == CAN_ASCII_MESSAGE_END_CHAR)
-           UART_SendString(test_string_message);
-           //UART_Transmit('a');
-#endif
         CDC_Device_SendByte(&VirtualSerial2_CDC_Interface, ReceivedByte); //echo received byte, debug!
         buffer[buffer_pos] = (unsigned char)(ReceivedByte & 0xFF);      //put byte into buffer until it is full
         buffer_pos++;                      //hopp to next buffer position
-        ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //get next char - returns negative value while no new bytes are available
+          ReceivedByte = CDC_Device_ReceiveByte(&VirtualSerial2_CDC_Interface); //get next char - returns negative value while no new bytes are available
     }
     buffer[buffer_pos] = 0; //terminated by zero
 
